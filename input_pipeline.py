@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-SHUFFLE_BUFFER_SIZE = 1024
+SHUFFLE_BUFFER_SIZE = 2048
 NUM_PARALLEL_CALLS = 64
 NUM_CORES = 8
 RESIZE_METHOD = tf.image.ResizeMethod.BILINEAR
@@ -10,21 +10,22 @@ MIN_DIMENSION = 256  # when evaluating, resize to this size before doing central
 
 
 class Pipeline:
-    def __init__(self, filenames, is_training, batch_size, image_size=None):
+    def __init__(self, file_pattern, is_training, batch_size, image_size=None):
         """
         Arguments:
-            filenames: a list of strings, paths to tfrecords files.
+            filenames: a string.
             is_training: a boolean.
             batch_size: an integer.
             image_size: an integer or None, it will be used for training only.
         """
+        if not is_training:
+            assert image_size is None
+
         self.is_training = is_training
         self.image_size = image_size
 
-        dataset = tf.data.Dataset.from_tensor_slices(filenames)
-        num_shards = len(filenames)
+        dataset = tf.data.Dataset.list_files(file_pattern, shuffle=is_training)
         if is_training:
-            dataset = dataset.shuffle(buffer_size=num_shards)
             dataset = dataset.repeat()
 
         def fetch_dataset(filename):
@@ -36,11 +37,9 @@ class Pipeline:
             fetch_dataset, cycle_length=NUM_PARALLEL_CALLS, sloppy=True
         ))
 
-        # mix the training examples
         if is_training:
             dataset = dataset.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE)
 
-        # decode and augment data
         dataset = dataset.apply(tf.contrib.data.map_and_batch(
             self.parse_and_preprocess, batch_size=batch_size,
             num_parallel_batches=NUM_CORES, drop_remainder=True

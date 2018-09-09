@@ -51,7 +51,6 @@ def model_fn(features, labels, mode, params):
     assert mode == tf.estimator.ModeKeys.TRAIN
     with tf.variable_scope('learning_rate'):
         global_step = tf.train.get_global_step()
-        steps_per_epoch = FLAGS.num_train_images / FLAGS.train_batch_size
         learning_rate = get_learning_rate(global_step, params)
 
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -114,7 +113,9 @@ def metric_fn(labels, logits):
 def get_learning_rate(global_step, params):
 
     # in case there is a change in the batch size
-    scaler = tf.to_float(params['batch_size'] / 1024.0)
+    scaler = tf.to_float(params['global_batch_size'] / 1024)
+    assert params['global_batch_size'] == 1024
+    assert params['batch_size'] == 1024
 
     warm_up_steps = tf.to_int64(params['warm_up_steps'])
     warm_up_lr = tf.to_float(params['warm_up_lr'])  # initial learning rate
@@ -126,12 +127,11 @@ def get_learning_rate(global_step, params):
 
     # normal learning rate schedule
     learning_rate = tf.train.piecewise_constant(
-        global_step - warm_up_steps,
-        params['lr_boundaries'], params['lr_values']
+        global_step, params['lr_boundaries'], params['lr_values']
     )
 
     # learning_rate = tf.train.polynomial_decay(
-    #     params['initial_learning_rate'], global_step,
+    #     params['initial_learning_rate'], global_step - warm_up_steps,
     #     params['decay_steps'], params['end_learning_rate'],
     #     power=1.0
     # )  # linear decay
