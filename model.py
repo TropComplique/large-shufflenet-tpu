@@ -52,7 +52,7 @@ def model_fn(features, labels, mode, params):
         )
 
     assert mode == tf.estimator.ModeKeys.TRAIN
-    with tf.variable_scope('learning_rate'):
+    with tf.variable_scope('learning_rate_schedule'):
         global_step = tf.train.get_global_step()
         learning_rate = get_learning_rate(global_step, params)
 
@@ -72,7 +72,6 @@ def model_fn(features, labels, mode, params):
 
     tensors_to_summarize = [
         tf.reshape(global_step, [1]),
-        tf.reshape(total_loss, [1]),
         tf.reshape(cross_entropy, [1]),
         tf.reshape(regularization_loss, [1]),
         tf.reshape(learning_rate, [1]),
@@ -80,14 +79,14 @@ def model_fn(features, labels, mode, params):
     ]
 
     def host_call_fn(
-            global_step, total_loss,
+            global_step,
             cross_entropy, regularization_loss,
             learning_rate, train_accuracy):
 
         global_step = global_step[0]
         with summary.create_file_writer(params['model_dir'], max_queue=params['iterations_per_loop']).as_default():
             with summary.always_record_summaries():
-                summary.scalar('total_loss', total_loss[0], step=global_step)
+                summary.scalar('entire_loss', total_loss[0], step=global_step)
                 summary.scalar('cross_entropy_loss', cross_entropy[0], step=global_step)
                 summary.scalar('regularization_loss', regularization_loss[0], step=global_step)
                 summary.scalar('learning_rate', learning_rate[0], step=global_step)

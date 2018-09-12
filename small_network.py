@@ -21,7 +21,8 @@ def shufflenet(images, is_training, num_classes=1000, depth_multiplier='1.0'):
     Returns:
         a float tensor with shape [batch_size, num_classes].
     """
-    possibilities = {'0.5': 48, '1.0': 116, '1.5': 176, '2.0': 224}
+    possibilities = {'0.5': 48, '1.0': 120, '1.5': 176, '2.0': 224}
+    # 116 for '1.0' in the original paper
     initial_depth = possibilities[depth_multiplier]
 
     def batch_norm(x):

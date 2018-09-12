@@ -32,7 +32,7 @@ NUM_STEPS_PER_EPOCH = TRAIN_DATASET_SIZE // BATCH_SIZE
 NUM_STEPS = NUM_EPOCHS * NUM_STEPS_PER_EPOCH  # 112590
 
 # Controls how often evaluation is performed.
-STEPS_PER_EVAL = 3 * 1251  # evaluate after every third epoch
+STEPS_PER_EVAL = 4 * 1251  # evaluate after every fourth epoch
 
 # Number of steps to run on TPU before outfeeding metrics to the CPU.
 ITERATIONS_PER_LOOP = 1251  # number before returning to CPU
