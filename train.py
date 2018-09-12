@@ -1,6 +1,10 @@
 import tensorflow as tf
 from model import model_fn, RestoreMovingAverageHook
 from input_pipeline import Pipeline
+
+from tensorflow.contrib.tpu.python.tpu import tpu_config
+from tensorflow.contrib.tpu.python.tpu import tpu_estimator
+
 tf.logging.set_verbosity('INFO')
 
 
@@ -63,10 +67,10 @@ def get_input_fn(is_training, image_size=None):
 
     file_pattern = PARAMS['train_file_pattern'] if is_training else PARAMS['val_file_pattern']
 
-    def input_fn():
+    def input_fn(params):
         pipeline = Pipeline(
             file_pattern, is_training, image_size=image_size,
-            batch_size=BATCH_SIZE if is_training else VALIDATION_BATCH_SIZE
+            batch_size=params['batch_size']
         )
         return pipeline.dataset
 
@@ -77,21 +81,23 @@ tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
     TPU, zone=TPU_ZONE,
     project=GCP_PROJECT
 )
-tpu_config = tf.contrib.tpu.TPUConfig(
-    iterations_per_loop=ITERATIONS_PER_LOOP,
-    per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
-)
-config = tf.contrib.tpu.RunConfig(
+# tf.contrib.tpu.
+config = tpu_config.RunConfig(
     cluster=tpu_cluster_resolver,
-    model_dir=MODEL_DIR, save_checkpoints_steps=ITERATIONS_PER_LOOP,
-    keep_checkpoint_max=5, tpu_config=tpu_config,
+    model_dir=PARAMS['model_dir'],
+    save_checkpoints_steps=ITERATIONS_PER_LOOP,
+    keep_checkpoint_max=5,
+    tpu_config=tpu_config.TPUConfig(
+        iterations_per_loop=ITERATIONS_PER_LOOP,
+        per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
+    ),
     log_step_count_steps=500
 )
 
 
-estimator = tf.contrib.tpu.TPUEstimator(
+estimator = tpu_estimator.TPUEstimator(
     model_fn=model_fn, model_dir=PARAMS['model_dir'],
-    params=params, config=config,
+    params=PARAMS, config=config,
     train_batch_size=BATCH_SIZE,
     eval_batch_size=VALIDATION_BATCH_SIZE
 )
@@ -113,17 +119,10 @@ def load_global_step_from_checkpoint_dir(checkpoint_dir):
         return 0
 
 
-
-tf.logging.info(
-    'Training for %d steps (%d epochs in total). Current step %d.',
-    NUM_STEPS, NUM_EPOCHS, current_step
-)
-
-
 def train_and_eval(input_fn, end_step):
 
     # load last checkpoint and start from there
-    current_step = load_global_step_from_checkpoint_dir(output_dir)
+    current_step = load_global_step_from_checkpoint_dir(PARAMS['model_dir'])
 
     while current_step < end_step:
 

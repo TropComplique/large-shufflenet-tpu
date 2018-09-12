@@ -1,5 +1,7 @@
 import tensorflow as tf
 from tensorflow.contrib import summary
+from tensorflow.contrib.tpu.python.tpu import bfloat16
+from tensorflow.contrib.tpu.python.tpu import tpu_optimizer
 from small_network import shufflenet
 # from large_network import large_shufflenet
 
@@ -22,7 +24,7 @@ def model_fn(features, labels, mode, params):
     images = tf.transpose(images, [3, 0, 1, 2])  # HWCN to NHWC
 
     is_training = mode == tf.estimator.ModeKeys.TRAIN
-    with tf.contrib.tpu.bfloat16_scope():
+    with bfloat16.bfloat16_scope():
         logits = shufflenet(
             images, is_training, num_classes=params['num_classes'],
             depth_multiplier=params['depth_multiplier']
@@ -56,7 +58,8 @@ def model_fn(features, labels, mode, params):
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops), tf.variable_scope('optimizer'):
         optimizer = tf.train.MomentumOptimizer(learning_rate, momentum=MOMENTUM, use_nesterov=USE_NESTEROV)
-        optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+        #  tf.contrib.tpu.
+        optimizer = tpu_optimizer.CrossShardOptimizer(optimizer)
         train_op = optimizer.minimize(total_loss, global_step)
 
     with tf.control_dependencies([train_op]), tf.name_scope('ema'):
