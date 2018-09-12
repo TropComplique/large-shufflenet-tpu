@@ -72,6 +72,7 @@ def model_fn(features, labels, mode, params):
 
     tensors_to_summarize = [
         tf.reshape(global_step, [1]),
+        tf.reshape(total_loss, [1]),
         tf.reshape(cross_entropy, [1]),
         tf.reshape(regularization_loss, [1]),
         tf.reshape(learning_rate, [1]),
@@ -79,7 +80,7 @@ def model_fn(features, labels, mode, params):
     ]
 
     def host_call_fn(
-            global_step,
+            global_step, total_loss,
             cross_entropy, regularization_loss,
             learning_rate, train_accuracy):
 
