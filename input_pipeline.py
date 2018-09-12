@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 SHUFFLE_BUFFER_SIZE = 2048
-NUM_PARALLEL_CALLS = 64
+NUM_PARALLEL_CALLS = 16
 NUM_CORES = 8
 RESIZE_METHOD = tf.image.ResizeMethod.BILINEAR
 EVALUATION_IMAGE_SIZE = 224  # this will be used for validation

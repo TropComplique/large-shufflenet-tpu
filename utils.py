@@ -37,7 +37,7 @@ def concat_shuffle_split(x, y):
 def basic_unit(x):
     in_channels = x.shape[3].value
     x = slim.conv2d(x, in_channels, (1, 1), stride=1, scope='conv1x1_before')
-    x = depthwise_conv(x, kernel=3, stride=1, activation_fn=None, scope='depthwise')
+    x = slim.separable_conv2d(x, None, (3, 3), stride=1, depth_multiplier=1, activation_fn=None, scope='depthwise')
     x = slim.conv2d(x, in_channels, (1, 1), stride=1, scope='conv1x1_after')
     return x
 
@@ -48,31 +48,10 @@ def basic_unit_with_downsampling(x, out_channels=None, downsample=True):
     stride = 2 if downsample else 1  # paradoxically, it sometimes doesn't downsample
 
     y = slim.conv2d(x, in_channels, (1, 1), stride=1, scope='conv1x1_before')
-    y = depthwise_conv(y, kernel=3, stride=stride, activation_fn=None, scope='depthwise')
+    y = slim.separable_conv2d(y, None, (3, 3), stride=stride, depth_multiplier=1, activation_fn=None, scope='depthwise')
     y = slim.conv2d(y, out_channels // 2, (1, 1), stride=1, scope='conv1x1_after')
 
     with tf.variable_scope('second_branch'):
-        x = depthwise_conv(x, kernel=3, stride=stride, activation_fn=None, scope='depthwise')
+        x = slim.separable_conv2d(x, None, (3, 3), stride=stride, depth_multiplier=1, activation_fn=None, scope='depthwise')
         x = slim.conv2d(x, out_channels // 2, (1, 1), stride=1, scope='conv1x1_after')
         return x, y
-
-
-@tf.contrib.framework.add_arg_scope
-def depthwise_conv(
-        x, kernel=3, stride=1, padding='SAME',
-        activation_fn=None, normalizer_fn=None,
-        weights_initializer=tf.contrib.layers.xavier_initializer(),
-        data_format='NHWC', scope='depthwise_conv'):
-
-    with tf.variable_scope(scope):
-        assert data_format == 'NHWC'
-        in_channels = x.shape[3].value
-        W = tf.get_variable(
-            'depthwise_weights',
-            [kernel, kernel, in_channels, 1], dtype=tf.float32,
-            initializer=weights_initializer
-        )
-        x = tf.nn.depthwise_conv2d(x, W, [1, stride, stride, 1], padding, data_format='NHWC')
-        x = normalizer_fn(x) if normalizer_fn is not None else x  # batch normalization
-        x = activation_fn(x) if activation_fn is not None else x  # nonlinearity
-        return x

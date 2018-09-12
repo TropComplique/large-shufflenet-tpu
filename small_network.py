@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-from utils import depthwise_conv, block
+from utils import block
 
 
 BATCH_NORM_MOMENTUM = 0.9
@@ -43,7 +43,7 @@ def shufflenet(images, is_training, num_classes=1000, depth_multiplier='1.0'):
             'normalizer_fn': batch_norm, 'data_format': 'NHWC',
             'weights_initializer': tf.contrib.layers.xavier_initializer()
         }
-        with slim.arg_scope([slim.conv2d, depthwise_conv], **params):
+        with slim.arg_scope([slim.conv2d, slim.separable_conv2d], **params):
 
             x = slim.conv2d(x, 24, (3, 3), stride=2, scope='Conv1')
             x = slim.max_pool2d(x, (3, 3), stride=2, padding='SAME', scope='MaxPool')
