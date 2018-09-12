@@ -32,7 +32,7 @@ NUM_STEPS_PER_EPOCH = TRAIN_DATASET_SIZE // BATCH_SIZE
 NUM_STEPS = NUM_EPOCHS * NUM_STEPS_PER_EPOCH  # 112590
 
 # Controls how often evaluation is performed.
-STEPS_PER_EVAL = 1251  # evaluate after every epoch
+STEPS_PER_EVAL = 3 * 1251  # evaluate after every third epoch
 
 # Number of steps to run on TPU before outfeeding metrics to the CPU.
 ITERATIONS_PER_LOOP = 1251  # number before returning to CPU
@@ -81,7 +81,6 @@ tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
     TPU, zone=TPU_ZONE,
     project=GCP_PROJECT
 )
-# tf.contrib.tpu.
 config = tpu_config.RunConfig(
     cluster=tpu_cluster_resolver,
     model_dir=PARAMS['model_dir'],
@@ -91,7 +90,6 @@ config = tpu_config.RunConfig(
         iterations_per_loop=ITERATIONS_PER_LOOP,
         per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
     ),
-    log_step_count_steps=500
 )
 
 
@@ -114,7 +112,7 @@ def load_global_step_from_checkpoint_dir(checkpoint_dir):
         checkpoint_reader = tf.train.NewCheckpointReader(
             tf.train.latest_checkpoint(checkpoint_dir)
         )
-        return checkpoint_reader.get_tensor(tf.GraphKeys.GLOBAL_STEP)
+        return int(checkpoint_reader.get_tensor(tf.GraphKeys.GLOBAL_STEP))
     except:
         return 0
 

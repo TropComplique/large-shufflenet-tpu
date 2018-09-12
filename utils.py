@@ -22,15 +22,21 @@ def block(x, num_units, out_channels=None, downsample=True, scope='stage'):
 
 def concat_shuffle_split(x, y):
     with tf.name_scope('concat_shuffle_split'):
-        shape = tf.shape(x)
-        batch_size = shape[0]
-        height, width = shape[1], shape[2]
-        depth = x.shape[3].value
+
+        # when we are training on TPUs these must be known:
+        batch_size, height, width, depth = x.shape.as_list()
+
+        # use this if you want dynamic batch size and image size:
+        # shape = tf.shape(x)
+        # batch_size = shape[0]
+        # height, width = shape[1], shape[2]
+        # depth = x.shape[3].value
 
         z = tf.stack([x, y], axis=3)  # shape [batch_size, height, width, 2, depth]
         z = tf.transpose(z, [0, 1, 2, 4, 3])
         z = tf.reshape(z, [batch_size, height, width, 2*depth])
         x, y = tf.split(z, num_or_size_splits=2, axis=3)
+
         return x, y
 
 
