@@ -40,7 +40,7 @@ def large_shufflenet(images, is_training, num_classes=1000):
         params = {
             'padding': 'SAME', 'activation_fn': tf.nn.relu,
             'normalizer_fn': batch_norm, 'data_format': 'NHWC',
-            'weights_initializer': tf.contrib.layers.xavier_initializer()
+            'weights_initializer': tf.variance_scaling_initializer()
         }
         with slim.arg_scope([slim.conv2d, slim.separable_conv2d], **params):
 
@@ -62,6 +62,6 @@ def large_shufflenet(images, is_training, num_classes=1000):
 
     logits = slim.fully_connected(
         x, num_classes, activation_fn=None, scope='classifier',
-        weights_initializer=tf.contrib.layers.xavier_initializer()
+        weights_initializer=tf.truncated_normal_initializer(stddev=0.01)
     )
     return logits
