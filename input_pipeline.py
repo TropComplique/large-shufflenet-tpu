@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 SHUFFLE_BUFFER_SIZE = 2048
-NUM_PARALLEL_CALLS = 16
+NUM_PARALLEL_CALLS = 24
 NUM_CORES = 8
 RESIZE_METHOD = tf.image.ResizeMethod.BILINEAR
 EVALUATION_IMAGE_SIZE = 224  # this will be used for validation
@@ -10,19 +10,21 @@ MIN_DIMENSION = 256  # when evaluating, resize to this size before doing central
 
 
 class Pipeline:
-    def __init__(self, file_pattern, is_training, batch_size, image_size=None):
+    def __init__(self, file_pattern, is_training, batch_size, image_size=None, use_bfloat16=True):
         """
         Arguments:
             filenames: a string.
             is_training: a boolean.
             batch_size: an integer.
             image_size: an integer or None, it will be used for training only.
+            use_bfloat16: a boolean.
         """
         if not is_training:
             assert image_size is None
 
         self.is_training = is_training
         self.image_size = image_size
+        self.use_bfloat16 = use_bfloat16
 
         dataset = tf.data.Dataset.list_files(file_pattern, shuffle=is_training)
         if is_training:
@@ -109,8 +111,9 @@ class Pipeline:
             image = central_crop(image, crop_height=EVALUATION_IMAGE_SIZE, crop_width=EVALUATION_IMAGE_SIZE)
             image.set_shape([EVALUATION_IMAGE_SIZE, EVALUATION_IMAGE_SIZE, 3])
 
-        # we do mixed precision training
-        image = tf.cast(image, dtype=tf.bfloat16)
+        if self.use_bfloat16:
+            # we do mixed precision training
+            image = tf.cast(image, dtype=tf.bfloat16)
 
         # in the format required by tf.estimator, they will be batched later
         features, labels = image, label

@@ -18,19 +18,24 @@ def model_fn(features, labels, mode, params):
     # inference will happen in another way
     assert mode != tf.estimator.ModeKeys.PREDICT
 
+    network = lambda images, is_training: shufflenet(
+        images, is_training, num_classes=params['num_classes'],
+        depth_multiplier=params['depth_multiplier']
+    )
+
     # tensor `features` is a half precision tensor with shape [height, width, 3, batch_size],
     # it represents RGB images with values in [0, 1]
 
     images = features
     images = tf.transpose(images, [3, 0, 1, 2])  # HWCN to NHWC
-
     is_training = mode == tf.estimator.ModeKeys.TRAIN
-    with bfloat16.bfloat16_scope():
-        logits = shufflenet(
-            images, is_training, num_classes=params['num_classes'],
-            depth_multiplier=params['depth_multiplier']
-        )
-    logits = tf.to_float(logits)  # to full precision
+
+    if params['use_bfloat16']:
+        with bfloat16.bfloat16_scope():
+            logits = network(images, is_training)
+        logits = tf.to_float(logits)  # to full precision
+    else:
+        logits = network(images, is_training)
 
     with tf.name_scope('weight_decay'):
         add_weight_decay(params['weight_decay'])

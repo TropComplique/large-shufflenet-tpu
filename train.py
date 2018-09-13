@@ -31,11 +31,13 @@ VAL_DATASET_SIZE = 49999
 NUM_STEPS_PER_EPOCH = TRAIN_DATASET_SIZE // BATCH_SIZE
 NUM_STEPS = NUM_EPOCHS * NUM_STEPS_PER_EPOCH  # 112590
 
-# Controls how often evaluation is performed.
 STEPS_PER_EVAL = 4 * 1251  # evaluate after every fourth epoch
 
-# Number of steps to run on TPU before outfeeding metrics to the CPU.
-ITERATIONS_PER_LOOP = 1251  # number before returning to CPU
+# number of steps to run on TPU before outfeeding metrics to the CPU
+ITERATIONS_PER_LOOP = 1251
+
+# whether to do mixed precision training
+HALF_PRECISION = True
 
 PARAMS = {
     'train_file_pattern': 'gs://imagenetdata/train_shards/shard-*',
@@ -59,7 +61,8 @@ PARAMS = {
     # 'decay_steps': NUM_STEPS,
     # 'end_learning_rate': 1e-6,
 
-    'iterations_per_loop': ITERATIONS_PER_LOOP
+    'iterations_per_loop': ITERATIONS_PER_LOOP,
+    'use_bfloat16': HALF_PRECISION
 }
 
 
@@ -70,7 +73,8 @@ def get_input_fn(is_training, image_size=None):
     def input_fn(params):
         pipeline = Pipeline(
             file_pattern, is_training, image_size=image_size,
-            batch_size=params['batch_size']
+            batch_size=params['batch_size'],
+            use_bfloat16=PARAMS['use_bfloat16']
         )
         return pipeline.dataset
 
