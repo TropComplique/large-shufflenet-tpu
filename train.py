@@ -25,19 +25,21 @@ GCP_PROJECT = ''
 
 BATCH_SIZE = 1024
 VALIDATION_BATCH_SIZE = 1024  # some images will be excluded
-NUM_EPOCHS = 90
+NUM_EPOCHS = 100
 TRAIN_DATASET_SIZE = 1281144
 VAL_DATASET_SIZE = 49999
 NUM_STEPS_PER_EPOCH = TRAIN_DATASET_SIZE // BATCH_SIZE
-NUM_STEPS = NUM_EPOCHS * NUM_STEPS_PER_EPOCH  # 112590
+NUM_STEPS = NUM_EPOCHS * NUM_STEPS_PER_EPOCH  # 125100
 
 STEPS_PER_EVAL = 4 * 1251  # evaluate after every fourth epoch
 
 # number of steps to run on TPU before outfeeding metrics to the CPU
-ITERATIONS_PER_LOOP = 1251
+ITERATIONS_PER_LOOP = 2 * 1251
 
 # whether to do mixed precision training
 HALF_PRECISION = True
+
+NUM_WARM_UP_STEPS = 4 * NUM_STEPS_PER_EPOCH
 
 PARAMS = {
     'train_file_pattern': 'gs://imagenetdata/train_shards/shard-*',
@@ -50,16 +52,13 @@ PARAMS = {
 
     'global_batch_size': BATCH_SIZE,
 
-    'warm_up_steps': 4 * NUM_STEPS_PER_EPOCH,
+    'warm_up_steps': NUM_WARM_UP_STEPS,
     'warm_up_lr': 1e-6,
 
-    'lr_boundaries': [n * NUM_STEPS_PER_EPOCH for n in [21, 35, 43]],
-    'lr_values': [1.0, 0.1, 0.01, 0.001],
-
     # linear learning rate schedule
-    # 'initial_learning_rate': 0.5,
-    # 'decay_steps': NUM_STEPS,
-    # 'end_learning_rate': 1e-6,
+    'initial_learning_rate': 0.5,
+    'decay_steps': NUM_STEPS - NUM_WARM_UP_STEPS,
+    'end_learning_rate': 1e-6,
 
     'iterations_per_loop': ITERATIONS_PER_LOOP,
     'use_bfloat16': HALF_PRECISION
@@ -105,10 +104,8 @@ estimator = tpu_estimator.TPUEstimator(
 )
 
 
-train_small_input_fn = get_input_fn(is_training=True, image_size=128)
-train_medium_input_fn = get_input_fn(is_training=True, image_size=224)
-train_large_input_fn = get_input_fn(is_training=True, image_size=288)
-eval_input_fn = get_input_fn(is_training=False)  # for validation we use size 224
+train_input_fn = get_input_fn(is_training=True, image_size=224)
+eval_input_fn = get_input_fn(is_training=False)  # for validation we also use size 224
 
 
 def load_global_step_from_checkpoint_dir(checkpoint_dir):
@@ -135,11 +132,10 @@ def train_and_eval(input_fn, end_step):
         tf.logging.info('Starting to evaluate.')
         eval_results = estimator.evaluate(
             input_fn=eval_input_fn,
-            steps=VAL_DATASET_SIZE // VALIDATION_BATCH_SIZE
+            steps=VAL_DATASET_SIZE // VALIDATION_BATCH_SIZE,
+            hooks=[RestoreMovingAverageHook(PARAMS['model_dir'])]
         )
         tf.logging.info('Eval results at step %d: %s', next_checkpoint, eval_results)
 
 
-train_and_eval(train_small_input_fn, 18 * NUM_STEPS_PER_EPOCH)
-train_and_eval(train_medium_input_fn, 41 * NUM_STEPS_PER_EPOCH)
-train_and_eval(train_large_input_fn, NUM_EPOCHS * NUM_STEPS_PER_EPOCH)
+train_and_eval(train_input_fn, NUM_EPOCHS * NUM_STEPS_PER_EPOCH)

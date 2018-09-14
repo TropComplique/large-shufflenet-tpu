@@ -125,22 +125,18 @@ def get_learning_rate(global_step, params):
 
     warm_up_steps = tf.to_int64(params['warm_up_steps'])
     warm_up_lr = tf.to_float(params['warm_up_lr'])  # initial learning rate
-    first_normal_lr = tf.to_float(params['lr_values'][0])
+    first_normal_lr = tf.to_float(params['initial_learning_rate'])
 
     # linearly increase learning rate (warm up)
     ratio = tf.to_float(global_step) / tf.to_float(warm_up_steps)
     warm_up_learning_rate = warm_up_lr + ratio * (first_normal_lr - warm_up_lr)
 
     # normal learning rate schedule
-    learning_rate = tf.train.piecewise_constant(
-        global_step, params['lr_boundaries'], params['lr_values']
-    )
-
-    # learning_rate = tf.train.polynomial_decay(
-    #     params['initial_learning_rate'], global_step - warm_up_steps,
-    #     params['decay_steps'], params['end_learning_rate'],
-    #     power=1.0
-    # )  # linear decay
+    learning_rate = tf.train.polynomial_decay(
+        params['initial_learning_rate'], global_step - warm_up_steps,
+        params['decay_steps'], params['end_learning_rate'],
+        power=1.0
+    )  # linear decay
 
     is_normal = global_step >= warm_up_steps
     learning_rate = tf.cond(is_normal, lambda: learning_rate, lambda: warm_up_learning_rate)
