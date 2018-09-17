@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-SHUFFLE_BUFFER_SIZE = 2048
+SHUFFLE_BUFFER_SIZE = 4*1024
 NUM_PARALLEL_CALLS = 24
 NUM_CORES = 8
 RESIZE_METHOD = tf.image.ResizeMethod.BILINEAR
@@ -163,7 +163,7 @@ def get_random_crop(image_as_string, boxes):
     distorted_bounding_box = tf.image.sample_distorted_bounding_box(
         tf.image.extract_jpeg_shape(image_as_string),
         bounding_boxes=tf.expand_dims(boxes, axis=0),
-        min_object_covered=0.25,
+        min_object_covered=0.2,
         aspect_ratio_range=[0.75, 1.33],
         area_range=[0.08, 1.0],
         max_attempts=100,

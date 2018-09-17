@@ -21,7 +21,9 @@ def large_shufflenet(images, is_training, num_classes=1000):
     Returns:
         a float tensor with shape [batch_size, num_classes].
     """
-    initial_depth = 240  # in the original paper 244
+    initial_depth = 240
+    # in the original paper 244, but i want it to be divisible by 8.
+    # it is recommended for TPUs
 
     def batch_norm(x):
         x = tf.layers.batch_normalization(

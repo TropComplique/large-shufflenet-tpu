@@ -25,13 +25,13 @@ GCP_PROJECT = ''
 
 BATCH_SIZE = 1024
 VALIDATION_BATCH_SIZE = 1024  # some images will be excluded
-NUM_EPOCHS = 100
+NUM_EPOCHS = 175
 TRAIN_DATASET_SIZE = 1281144
 VAL_DATASET_SIZE = 49999
 NUM_STEPS_PER_EPOCH = TRAIN_DATASET_SIZE // BATCH_SIZE
 NUM_STEPS = NUM_EPOCHS * NUM_STEPS_PER_EPOCH  # 125100
 
-STEPS_PER_EVAL = 4 * 1251  # evaluate after every fourth epoch
+STEPS_PER_EVAL = 6 * 1251  # evaluate after every fourth epoch
 
 # number of steps to run on TPU before outfeeding metrics to the CPU
 ITERATIONS_PER_LOOP = 2 * 1251
@@ -39,7 +39,7 @@ ITERATIONS_PER_LOOP = 2 * 1251
 # whether to do mixed precision training
 HALF_PRECISION = True
 
-NUM_WARM_UP_STEPS = 4 * NUM_STEPS_PER_EPOCH
+NUM_WARM_UP_STEPS = 5 * NUM_STEPS_PER_EPOCH
 
 PARAMS = {
     'train_file_pattern': 'gs://imagenetdata/train_shards/shard-*',
@@ -47,7 +47,7 @@ PARAMS = {
     'model_dir': 'gs://imagenetdata/models/run00/',
 
     'num_classes': 1000,
-    'depth_multiplier': '1.0',
+    'depth_multiplier': '1.5',
     'weight_decay': 4e-5,
 
     'global_batch_size': BATCH_SIZE,

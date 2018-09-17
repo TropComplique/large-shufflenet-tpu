@@ -3,7 +3,7 @@ import tensorflow.contrib.slim as slim
 from utils import block
 
 
-BATCH_NORM_MOMENTUM = 0.9
+BATCH_NORM_MOMENTUM = 0.97
 BATCH_NORM_EPSILON = 1e-3
 
 
@@ -21,8 +21,9 @@ def shufflenet(images, is_training, num_classes=1000, depth_multiplier='1.0'):
     Returns:
         a float tensor with shape [batch_size, num_classes].
     """
-    possibilities = {'0.5': 48, '1.0': 120, '1.5': 176, '2.0': 224}
-    # 116 for '1.0' in the original paper
+    possibilities = {'0.5': 48, '1.0': 116, '1.5': 176, '2.0': 224}
+    # 116 is not divisible by 8,
+    # so maybe you need to change it when training on TPUs
     initial_depth = possibilities[depth_multiplier]
 
     def batch_norm(x):

@@ -10,7 +10,7 @@ from small_network import shufflenet
 MOMENTUM = 0.9
 USE_NESTEROV = True
 MOVING_AVERAGE_DECAY = 0.995
-LABEL_SMOOTHING = 0.1
+LABEL_SMOOTHING = 0
 
 
 def model_fn(features, labels, mode, params):
