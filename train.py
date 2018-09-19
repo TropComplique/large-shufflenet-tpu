@@ -25,16 +25,16 @@ GCP_PROJECT = ''
 
 BATCH_SIZE = 1024
 VALIDATION_BATCH_SIZE = 1024  # some images will be excluded
-NUM_EPOCHS = 175
+NUM_EPOCHS = 200
 TRAIN_DATASET_SIZE = 1281144
 VAL_DATASET_SIZE = 49999
 NUM_STEPS_PER_EPOCH = TRAIN_DATASET_SIZE // BATCH_SIZE
-NUM_STEPS = NUM_EPOCHS * NUM_STEPS_PER_EPOCH  # 125100
+NUM_STEPS = NUM_EPOCHS * NUM_STEPS_PER_EPOCH  # 250200
 
 STEPS_PER_EVAL = 6 * 1251  # evaluate after every fourth epoch
 
 # number of steps to run on TPU before outfeeding metrics to the CPU
-ITERATIONS_PER_LOOP = 2 * 1251
+ITERATIONS_PER_LOOP = 3 * 1251
 
 # whether to do mixed precision training
 HALF_PRECISION = True
@@ -58,7 +58,7 @@ PARAMS = {
     # linear learning rate schedule
     'initial_learning_rate': 0.5,
     'decay_steps': NUM_STEPS - NUM_WARM_UP_STEPS,
-    'end_learning_rate': 1e-6,
+    'end_learning_rate': 1e-8,
 
     'iterations_per_loop': ITERATIONS_PER_LOOP,
     'use_bfloat16': HALF_PRECISION
@@ -90,6 +90,7 @@ config = tpu_config.RunConfig(
     save_checkpoints_steps=ITERATIONS_PER_LOOP,
     keep_checkpoint_max=5,
     tpu_config=tpu_config.TPUConfig(
+        num_shards=8,
         iterations_per_loop=ITERATIONS_PER_LOOP,
         per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
     ),

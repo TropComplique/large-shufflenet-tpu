@@ -2,9 +2,9 @@ import tensorflow as tf
 
 
 SHUFFLE_BUFFER_SIZE = 4*1024
-NUM_PARALLEL_CALLS = 24
+NUM_PARALLEL_CALLS = 64
 NUM_CORES = 8
-RESIZE_METHOD = tf.image.ResizeMethod.BILINEAR
+RESIZE_METHOD = tf.image.ResizeMethod.NEAREST_NEIGHBOR  # BILINEAR is slow
 EVALUATION_IMAGE_SIZE = 224  # this will be used for validation
 MIN_DIMENSION = 256  # when evaluating, resize to this size before doing central crop
 
@@ -53,7 +53,7 @@ class Pipeline:
             num_parallel_calls=NUM_CORES
         )  # from NHWC to HWCN
 
-        dataset = dataset.prefetch(buffer_size=tf.contrib.data.AUTOTUNE)
+        dataset = dataset.prefetch(buffer_size=32)
 
         self.dataset = dataset
 
@@ -95,14 +95,14 @@ class Pipeline:
             # they are only used for data augmentation
 
             image = get_random_crop(image_as_string, boxes)
-            image = tf.image.random_flip_left_right(image)
             image = tf.image.resize_images(
                 image, [self.image_size, self.image_size],
                 method=RESIZE_METHOD
             )  # has type float32
 
             image = (1.0 / 255.0) * image  # to [0, 1] range
-            image = random_color_manipulations(image, probability=0.75, grayscale_probability=0.05)
+            image = tf.image.random_flip_left_right(image)
+            image = random_color_manipulations(image, probability=0.25, grayscale_probability=0.01)
             image.set_shape([self.image_size, self.image_size, 3])
         else:
             image = tf.image.decode_jpeg(image_as_string, channels=3)  # has uint8 type
