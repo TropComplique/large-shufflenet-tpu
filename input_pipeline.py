@@ -4,7 +4,7 @@ import tensorflow as tf
 SHUFFLE_BUFFER_SIZE = 4*1024
 NUM_PARALLEL_CALLS = 64
 NUM_CORES = 8
-RESIZE_METHOD = tf.image.ResizeMethod.NEAREST_NEIGHBOR  # BILINEAR is slow
+RESIZE_METHOD = tf.image.ResizeMethod.BILINEAR  # maybe try NEAREST_NEIGHBOR
 EVALUATION_IMAGE_SIZE = 224  # this will be used for validation
 MIN_DIMENSION = 256  # when evaluating, resize to this size before doing central crop
 
