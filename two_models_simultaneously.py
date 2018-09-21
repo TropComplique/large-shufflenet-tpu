@@ -19,16 +19,14 @@ def model_fn(features, labels, mode, params):
     # inference will happen in another way
     assert mode != tf.estimator.ModeKeys.PREDICT
 
-    with tf.variable_scope('network1'):
-        network1 = lambda images, is_training: shufflenet(
-            images, is_training, num_classes=params['num_classes'],
-            depth_multiplier=DEPTH_MULTIPLIER1
-        )
-    with tf.variable_scope('network2'):
-        network2 = lambda images, is_training: shufflenet(
-            images, is_training, num_classes=params['num_classes'],
-            depth_multiplier=DEPTH_MULTIPLIER2
-        )
+    network1 = lambda images, is_training: shufflenet(
+        images, is_training, num_classes=params['num_classes'],
+        depth_multiplier=DEPTH_MULTIPLIER1
+    )
+    network2 = lambda images, is_training: shufflenet(
+        images, is_training, num_classes=params['num_classes'],
+        depth_multiplier=DEPTH_MULTIPLIER2
+    )
 
     # tensor `features` is a half precision tensor with shape [height, width, 3, batch_size],
     # it represents RGB images with values in [0, 1]
@@ -39,14 +37,18 @@ def model_fn(features, labels, mode, params):
 
     if params['use_bfloat16']:
         with bfloat16.bfloat16_scope():
-            logits1 = network1(images, is_training)
-            logits2 = network2(images, is_training)
+            with tf.variable_scope('network1'):
+                logits1 = network1(images, is_training)
+            with tf.variable_scope('network2'):
+                logits2 = network2(images, is_training)
         # to full precision
         logits1 = tf.to_float(logits1)
         logits2 = tf.to_float(logits2)
     else:
-        logits1 = network1(images, is_training)
-        logits2 = network2(images, is_training)
+        with tf.variable_scope('network1'):
+            logits1 = network1(images, is_training)
+        with tf.variable_scope('network2'):
+            logits2 = network2(images, is_training)
 
     with tf.name_scope('weight_decay'):
         regularization_loss1 = get_regularization_loss(params['weight_decay'], scope='network1')
@@ -103,7 +105,7 @@ def model_fn(features, labels, mode, params):
         tf.reshape(regularization_loss1, [1]),
         tf.reshape(regularization_loss2, [1]),
         tf.reshape(learning_rate, [1]),
-        tf.reshape(train_accuracy1, [1])
+        tf.reshape(train_accuracy1, [1]),
         tf.reshape(train_accuracy2, [1])
     ]
 
